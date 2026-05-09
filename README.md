@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # docx → md Converter
 
 A lightweight FastAPI web service that converts `.docx` files to clean Markdown (`.md`) — instantly, in the browser. Upload a Word document, download the Markdown equivalent with the same filename.
@@ -182,3 +183,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 **Stephen Sowah**
 M.S. Information Systems (Cybersecurity) — Baylor University, Hankamer School of Business
 [nasowah.com](https://nasowah.com) · [GitHub](https://github.com/snasowah-baylor) · [LinkedIn](https://linkedin.com/in/nasowah)
+
