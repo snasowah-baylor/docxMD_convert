@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>docx → md Converter</title>
+  <style>
+    /* ── Reset & Tokens ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --accent-dim:#1f6feb;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --success:   #3fb950;
+      --error:     #f85149;
+      --radius:    10px;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    /* ── Base ─────────────────────────────────────────────────────────────── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    /* ── Card ─────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    .header { margin-bottom: 2rem; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(88,166,255,0.1);
+      border: 1px solid rgba(88,166,255,0.25);
+      border-radius: 20px;
+      padding: 0.2rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    h1 span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Drop Zone ────────────────────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(88,166,255,0.04);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .drop-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .drop-label strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .file-selected {
+      margin-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--success);
+      word-break: break-all;
+    }
+
+    /* ── Button ───────────────────────────────────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 0.8rem 1.25rem;
+      background: var(--accent-dim);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--accent); }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Status ───────────────────────────────────────────────────────────── */
+    .status {
+      margin-top: 1.25rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    .status.info    { background: rgba(88,166,255,0.1);  color: var(--accent);  border: 1px solid rgba(88,166,255,0.2); }
+    .status.success { background: rgba(63,185,80,0.1);   color: var(--success); border: 1px solid rgba(63,185,80,0.2); }
+    .status.error   { background: rgba(248,81,73,0.1);   color: var(--error);   border: 1px solid rgba(248,81,73,0.2); }
+
+    /* ── Download link ────────────────────────────────────────────────────── */
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      padding: 0.55rem 1rem;
+      background: rgba(63,185,80,0.15);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: var(--radius);
+      color: var(--success);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+      transition: background 0.18s;
+    }
+
+    .download-link:hover { background: rgba(63,185,80,0.25); }
+
+    /* ── Footer ───────────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="badge">⚡ FastAPI + mammoth</div>
+    <h1>docx <span>→</span> md</h1>
+    <p class="subtitle">Upload a Word document, get clean Markdown back — instantly.</p>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".docx" />
+    <span class="drop-icon">📄</span>
+    <p class="drop-label"><strong>Click to browse</strong> or drag & drop here</p>
+    <p class="drop-label" style="margin-top:0.35rem;font-size:0.8rem;">.docx files only</p>
+    <p class="file-selected" id="fileName"></p>
+  </div>
+
+  <button class="btn" id="convertBtn" disabled>
+    ⇄ Convert to Markdown
+  </button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  const dropZone   = document.getElementById('dropZone');
+  const fileInput  = document.getElementById('fileInput');
+  const convertBtn = document.getElementById('convertBtn');
+  const fileName   = document.getElementById('fileName');
+  const status     = document.getElementById('status');
+
+  let selectedFile = null;
+
+  // ── File selection ──────────────────────────────────────────────────────
+  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      showStatus('error', '✗ Only .docx files are accepted.');
+      return;
+    }
+    selectedFile = file;
+    fileName.textContent = `✓ ${file.name}`;
+    convertBtn.disabled = false;
+    clearStatus();
+  }
+
+  // ── Drag & drop ─────────────────────────────────────────────────────────
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  // ── Conversion ───────────────────────────────────────────────────────────
+  convertBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    convertBtn.disabled = true;
+    showStatus('info', '⏳ Converting…');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/convert', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        const err = await res.json();
+        showStatus('error', `✗ ${err.detail || 'Conversion failed.'}`);
+        convertBtn.disabled = false;
+        return;
+      }
+
+      const blob = await res.blob();
+      const stem = selectedFile.name.replace(/\.docx$/i, '');
+      const url  = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = `${stem}.md`;
+      link.className = 'download-link';
+      link.innerHTML = `⬇ ${stem}.md`;
+
+      const statusEl = document.getElementById('status');
+      statusEl.style.display = 'block';
+      statusEl.className = 'status success';
+      statusEl.innerHTML = `✓ Conversion complete! `;
+      statusEl.appendChild(link);
+
+    } catch (err) {
+      showStatus('error', `✗ Network error: ${err.message}`);
+    } finally {
+      convertBtn.disabled = false;
+    }
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function showStatus(type, msg) {
+    status.style.display = 'block';
+    status.className = `status ${type}`;
+    status.textContent = msg;
+  }
+
+  function clearStatus() {
+    status.style.display = 'none';
+    status.textContent = '';
+  }
+</script>
+
+</body>
+</html>

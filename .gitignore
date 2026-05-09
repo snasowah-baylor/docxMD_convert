@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Environment variables — MOST CRITICAL
+.env
+.env.*
+*.env
+!.env.example        # allow a safe template with no real values
+
+# AWS credentials and config — NEVER commit these
+.aws/
+aws-credentials
+*.pem
+*.key
+*.crt
+*.p12
+
+# Elastic Beanstalk — contains account-specific config
+.elasticbeanstalk/
+*.cfg.yml
+
+# Docker secrets
+docker-compose.override.yml   # often used for local secrets
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Uploaded files — don't commit user data
+uploads/
+temp/
+tmp/
+*.docx
+*.md.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
